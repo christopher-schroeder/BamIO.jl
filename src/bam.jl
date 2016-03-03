@@ -61,8 +61,18 @@ next_refid(read::Read) = reinterpret(Int32,read.data[21:24])[1] + 1
 next_position(read::Read) = reinterpret(Int32,read.data[25:28])[1] + 1
 tlen(read::Read) = reinterpret(Int32,read.data[29:32])[1] + 1
 read_name(read::Read) = ascii(reinterpret(UInt8, read.data[33:31+l_read_name(read)]))
-is_duplicate(read::Read) = (flag(read::Read) & 1024) > 0
+is_paired(read::Read) = (flag(read::Read) & 1) > 0
+is_proper_paired(read::Read) = (flag(read::Read) & 2) > 0
 is_unmapped(read::Read) = (flag(read::Read) & 4) > 0
+mate_unmapped(read::Read) = (flag(read::Read) & 8) > 0
+is_reverse(read::Read) = (flag(read::Read) & 16) > 0
+mate_reverse(read::Read) = (flag(read::Read) & 32) > 0
+is_read1(read::Read) = (flag(read::Read) & 64) > 0
+is_read2(read::Read) = (flag(read::Read) & 128) > 0
+not_primary(read::Read) = (flag(read::Read) & 256) > 0
+fail_qc(read::Read) = (flag(read::Read) & 512) > 0
+is_duplicate(read::Read) = (flag(read::Read) & 1024) > 0
+supplementary_alignment(read::Read) = (flag(read::Read) & 2048) > 0
 
 function cigar(read::Read)
     start_pos = 33 + l_read_name(read)
