@@ -6,8 +6,7 @@ export BamReader, close, value, eof, advance!, eachposition
 type BamReader
     bamStream
     done::Bool
-    position::Int32
-    read::Array{Int8}
+    tid_to_refname::Dict{Int32,ASCIIString}
 end
 
 type Cigar
@@ -33,39 +32,43 @@ function BamReader(bamFileName::ASCIIString)
     # make sure the contigs match our reference
     n_ref = read(f, Int32)
 
+    tid_to_refname = Dict{Int32,ASCIIString}()
+
     for j in 1:n_ref
         l_name = read(f, Int32)
         refName = convert(ASCIIString, read(f, UInt8, l_name)[1:end-1]) # ignore the null terminator
         l_ref = read(f, Int32)
+        tid_to_refname[j] = refName
     end
 
-    BamReader(f, false, 0, Array{Int8}(0))
-end
-close(reader::Read) = GZip.close(reader.bamStream)
-refid(reader::Read) = reinterpret(Int32,reader.data[1:4])[1] + 1
-position(reader::Read) = reinterpret(Int32,reader.data[5:8])[1] + 1
-l_read_name(reader::Read) = reader.data[9]
-mq(reader::Read) = reader.data[10]
-bin(reader::Read) = reinterpret(Int16,reader.data[11:12])[1]
-n_cigar_op(reader::Read) = reinterpret(Int16,reader.data[13:14])[1]
-flag(reader::Read) = reinterpret(Int16,reader.data[15:16])[1]
-l_seq(reader::Read) = reinterpret(Int32,reader.data[17:20])[1]
-next_refid(reader::Read) = reinterpret(Int32,reader.data[21:24])[1] + 1
-next_position(reader::Read) = reinterpret(Int32,reader.data[25:28])[1] + 1
-tlen(reader::Read) = reinterpret(Int32,reader.data[29:32])[1] + 1
-read_name(reader::Read) = ascii(reinterpret(UInt8, reader.data[33:31+l_read_name(reader)]))
-
-function cigar(reader::Read)
-    start_pos = 33 + l_read_name(reader)
-    stop_pos = start_pos + n_cigar_op(reader) * 4
-    reinterpret(UInt32,reader.data[start_pos:stop_pos])
+    BamReader(f, false, tid_to_refname)
 end
 
-function seq(reader::Read, trans = b"=ACMGRSVTWYHKDBN")
-    seq_length = l_seq(reader)
-    start_pos = 33 + l_read_name(reader) + n_cigar_op(reader) * 4
+close(read::Read) = GZip.close(read.bamStream)
+refid(read::Read) = reinterpret(Int32,read.data[1:4])[1] + 1
+position(read::Read) = reinterpret(Int32,read.data[5:8])[1] + 1
+l_read_name(read::Read) = read.data[9]
+mq(read::Read) = read.data[10]
+bin(read::Read) = reinterpret(Int16,read.data[11:12])[1]
+n_cigar_op(read::Read) = reinterpret(Int16,read.data[13:14])[1]
+flag(read::Read) = reinterpret(Int16,read.data[15:16])[1]
+l_seq(read::Read) = reinterpret(Int32,read.data[17:20])[1]
+next_refid(read::Read) = reinterpret(Int32,read.data[21:24])[1] + 1
+next_position(read::Read) = reinterpret(Int32,read.data[25:28])[1] + 1
+tlen(read::Read) = reinterpret(Int32,read.data[29:32])[1] + 1
+read_name(read::Read) = ascii(reinterpret(UInt8, read.data[33:31+l_read_name(read)]))
+
+function cigar(read::Read)
+    start_pos = 33 + l_read_name(read)
+    stop_pos = start_pos + n_cigar_op(read) * 4
+    reinterpret(UInt32,read.data[start_pos:stop_pos])
+end
+
+function seq(read::Read, trans = b"=ACMGRSVTWYHKDBN")
+    seq_length = l_seq(read)
+    start_pos = 33 + l_read_name(read) + n_cigar_op(read) * 4
     stop_pos = start_pos + div(seq_length + 1, 2)
-    seq = reinterpret(UInt8,reader.data[start_pos:stop_pos])
+    seq = reinterpret(UInt8,read.data[start_pos:stop_pos])
 
     ret = Array{UInt8}(seq_length)
     for i = 1:seq_length
@@ -79,11 +82,11 @@ function seq(reader::Read, trans = b"=ACMGRSVTWYHKDBN")
     ascii(ret)
 end
 
-function qualities(reader::Read)
-    seq_length = l_seq(reader)
-    start_pos = 33 + l_read_name(reader) + n_cigar_op(reader) * 4 + div(seq_length + 1, 2)
+function qualities(read::Read)
+    seq_length = l_seq(read)
+    start_pos = 33 + l_read_name(read) + n_cigar_op(read) * 4 + div(seq_length + 1, 2)
     stop_pos = start_pos + seq_length - 1
-    a = reinterpret(UInt8,reader.data[start_pos:stop_pos])
+    a = reinterpret(UInt8,read.data[start_pos:stop_pos])
     for i = 1:length(a)
         a[i] = a[i] + 33
     end
@@ -91,6 +94,8 @@ function qualities(reader::Read)
     ascii(a)
 end
 
+# reader functions
+reference_name(reader::BamReader, tid::Int64) = reader.tid_to_refname[tid]
 eof(reader::BamReader) = reader.position == -1
 
 function nextread(r::BamReader)

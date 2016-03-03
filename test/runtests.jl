@@ -9,6 +9,7 @@ facts("read1") do
     @fact read_name(read) --> "FC30W98HM_20090202:4:76:1751:1274"
     @fact flag(read) --> 16
     @fact refid(read) --> 1
+    @fact reference_name(reader, refid(read)) --> "chr1"
     @fact position(read) --> 10056
     @fact mq(read) --> 1
     @fact cigar(read) --> UInt32[0x000001b0]
@@ -28,6 +29,7 @@ facts("read2") do
     @fact read_name(read) --> "FC30W98HM_20090202:4:86:34:1700"
     @fact flag(read) --> 16
     @fact refid(read) --> 1
+    @fact reference_name(reader, refid(read)) --> "chr1"
     @fact position(read) --> 10102
     @fact mq(read) --> 1
     @fact cigar(read) --> UInt32[0x000001b0]
