@@ -7,9 +7,6 @@ example
 ```julia
 using BamIO
 
-## BamReader
-
-# test forward reads
 reader = BamReader("small.bam")
 
 for i = 1:10
