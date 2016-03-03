@@ -18,6 +18,10 @@ type Read
     data::Array{Int8}
 end
 
+function BamReader(bamFileName::UTF8String)
+    BamReader(ascii(bamFileName))
+end
+
 function BamReader(bamFileName::ASCIIString)
     f = GZip.open(bamFileName)
 
@@ -57,11 +61,14 @@ next_refid(read::Read) = reinterpret(Int32,read.data[21:24])[1] + 1
 next_position(read::Read) = reinterpret(Int32,read.data[25:28])[1] + 1
 tlen(read::Read) = reinterpret(Int32,read.data[29:32])[1] + 1
 read_name(read::Read) = ascii(reinterpret(UInt8, read.data[33:31+l_read_name(read)]))
+is_duplicate(read::Read) = (flag(read::Read) & 1024) > 0
+is_unmapped(read::Read) = (flag(read::Read) & 4) > 0
 
 function cigar(read::Read)
     start_pos = 33 + l_read_name(read)
     stop_pos = start_pos + n_cigar_op(read) * 4
-    reinterpret(UInt32,read.data[start_pos:stop_pos])
+    cigar_array = reinterpret(UInt32,read.data[start_pos:stop_pos])
+    [(c & 15, c >> 4) for c in cigar_array]
 end
 
 function seq(read::Read, trans = b"=ACMGRSVTWYHKDBN")

@@ -12,7 +12,7 @@ facts("read1") do
     @fact reference_name(reader, refid(read)) --> "chr1"
     @fact position(read) --> 10056
     @fact mq(read) --> 1
-    @fact cigar(read) --> UInt32[0x000001b0]
+    @fact cigar(read) --> [(0,0x0000001b)]
     @fact next_refid(read) --> 0
     @fact BamIO.bin(read) --> 4681
     @fact next_position(read) --> 0
@@ -32,7 +32,7 @@ facts("read2") do
     @fact reference_name(reader, refid(read)) --> "chr1"
     @fact position(read) --> 10102
     @fact mq(read) --> 1
-    @fact cigar(read) --> UInt32[0x000001b0]
+    @fact cigar(read) --> [(0,0x0000001b)]
     @fact next_refid(read) --> 0
     @fact BamIO.bin(read) --> 4681
     @fact next_position(read) --> 0
