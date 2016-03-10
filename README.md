@@ -1,6 +1,6 @@
-# BamIO
+# BamIO.jl
 
-A simple bam reader for julia
+BamIO.jl is a simple reader for working with next generation sequencing alignment files in bam format. It is able to sequentially extract read information.
 
 example
 
